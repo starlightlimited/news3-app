@@ -1,0 +1,42 @@
+{
+  "HomePage": {
+    "title": "你好 世界！",
+    "hotArticles": "熱門文章",
+    "emptyHint": "暫無文章，請先在後台發佈內容",
+    "more": "更多",
+    "moreLink": "更多 →"
+  },
+  "Header": {
+    "logo": "貓兄弟新聞",
+    "home": "首頁",
+    "more": "更多",
+    "tagline": "即時新聞"
+  },
+  "Common": {
+    "backToHome": "返回首頁",
+    "noCover": "無封面",
+    "breaking": "突發",
+    "pinned": "置頂",
+    "noTitle": "（無標題）",
+    "prevPage": "上一頁",
+    "nextPage": "下一頁",
+    "pageOf": "{page} / {total}"
+  },
+  "NotFound": {
+    "code": "404",
+    "title": "找不到頁面",
+    "description": "您要查看的內容可能已被移除或網址有誤。",
+    "backHome": "返回首頁"
+  },
+  "CategoryPage": {
+    "totalArticles": "共 {total} 篇文章",
+    "emptyCategory": "此分類暫無文章"
+  },
+  "ArticlePage": {
+    "noBody": "（暫無正文）"
+  },
+  "LocaleSwitcher": {
+    "zh-hk": "繁",
+    "en": "EN"
+  }
+}
