@@ -4,7 +4,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { Article } from "@/lib/api";
@@ -12,6 +12,16 @@ import type { Article } from "@/lib/api";
 type Props = {
   articles: Article[];
 };
+
+function formatDate(iso: string | null) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("zh-HK", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Hong_Kong",
+  });
+}
 
 export default function HeroCarousel({ articles }: Props) {
   const t = useTranslations("Common");
@@ -40,109 +50,136 @@ export default function HeroCarousel({ articles }: Props) {
   if (articles.length === 0) return null;
 
   return (
-    <div className="group/carousel relative h-64 overflow-hidden rounded-lg border border-stone-200 lg:h-72 dark:border-stone-700">
-      <div ref={emblaRef} className="h-full overflow-hidden">
+    <div className="group/carousel relative h-full rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6 flex flex-col justify-between">
+      {/* 頂部組件標題 */}
+      <div className="relative mb-4 flex items-center justify-between border-b-2 border-slate-100 dark:border-slate-800 pb-2.5">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-red-600" />
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white font-serif">
+            熱點精選輪播
+          </h3>
+        </div>
+        <span className="text-[11px] font-mono font-bold text-slate-400">
+          {current + 1} / {articles.length}
+        </span>
+        <div className="absolute -bottom-0.5 left-0 h-[3px] w-14 bg-red-600 rounded-full" />
+      </div>
+
+      {/* 輪播核心 */}
+      <div ref={emblaRef} className="h-full w-full overflow-hidden flex-1">
         <div className="flex h-full">
           {articles.map((article, index) => (
             <div
               key={article.slug}
-              className="relative min-w-0 flex-[0_0_100%]"
+              className="group min-w-0 flex-[0_0_100%] flex flex-col justify-between"
             >
-              {article.cover?.url ? (
-                <Image
-                  src={article.cover.url}
-                  alt={article.cover.alt || article.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 896px"
-                  priority={index === 0}
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-stone-100 text-xs text-stone-400 dark:bg-stone-800">
-                  {t("noCover")}
-                </div>
-              )}
-
-              <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/20 to-transparent" />
-
               <Link
                 href={`/article/${article.slug}`}
-                className="absolute inset-x-0 bottom-0 p-4 group sm:p-5"
+                className="block space-y-3"
               >
-                <div className="flex items-center gap-2">
-                  {article.is_breaking && (
-                    <span className="rounded bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white">
-                      {t("breaking")}
-                    </span>
+                {/* 封面圖 */}
+                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-800">
+                  {article.cover?.url ? (
+                    <Image
+                      src={article.cover.url}
+                      alt={article.cover.alt || article.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 1024px) 100vw, 400px"
+                      priority={index === 0}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                      {t("noCover")}
+                    </div>
                   )}
-                  {article.category && (
-                    <span className="text-xs text-emerald-100">
-                      {article.category.name}
-                    </span>
-                  )}
+
+                  {/* 標籤 */}
+                  <div className="absolute top-2.5 left-2.5 flex gap-1.5">
+                    {article.is_breaking && (
+                      <span className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                        {t("breaking")}
+                      </span>
+                    )}
+                    {article.category && (
+                      <span className="rounded-md bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                        {article.category.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <h2 className="mt-1 line-clamp-2 text-sm font-semibold text-white sm:text-base">
-                  {article.title || t("noTitle")}
-                </h2>
-
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="flex gap-1.5">
-                    {articles.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          scrollTo(i);
-                        }}
-                        aria-label={`第 ${i + 1} 張`}
-                        className={`h-1 rounded-full transition-all ${
-                          i === current
-                            ? "w-4 bg-emerald-400"
-                            : "w-1 bg-white/50 hover:bg-white/70"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  {article.published_at && (
-                    <time
-                      dateTime={article.published_at}
-                      className="text-xs text-emerald-200"
-                    >
-                      {new Date(article.published_at).toLocaleDateString(
-                        "zh-TW",
-                        {
-                          month: "2-digit",
-                          day: "2-digit",
-                          timeZone: "Asia/Taipei",
-                        }
-                      )}
-                    </time>
+                {/* 標題與摘要 */}
+                <div className="space-y-1.5">
+                  <h4 className="font-serif line-clamp-2 text-base font-bold text-slate-900 group-hover:text-red-600 dark:text-white dark:group-hover:text-red-400 transition-colors leading-snug sm:text-lg">
+                    {article.title || t("noTitle")}
+                  </h4>
+                  {article.excerpt && (
+                    <p className="line-clamp-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {article.excerpt}
+                    </p>
                   )}
                 </div>
               </Link>
+
+              {/* 日期與指示器 */}
+              <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                {article.published_at ? (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-red-500" />
+                    <time dateTime={article.published_at}>
+                      {formatDate(article.published_at)}
+                    </time>
+                  </div>
+                ) : (
+                  <span />
+                )}
+
+                {/* 控制點 */}
+                <div className="flex items-center gap-1.5">
+                  {articles.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        scrollTo(i);
+                      }}
+                      aria-label={`跳至第 ${i + 1} 張`}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        i === current
+                          ? "w-5 bg-red-600"
+                          : "w-1.5 bg-slate-300 hover:bg-slate-400 dark:bg-slate-700"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
+      {/* 前後按鈕 */}
       {articles.length > 1 && (
-        <>
+        <div className="mt-3 pt-2 flex items-center justify-end gap-2">
           <button
+            type="button"
             onClick={scrollPrev}
             aria-label="上一張"
-            className="absolute left-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-900/50 text-white transition-all hover:bg-emerald-800/70 active:scale-95 opacity-0 group-hover/carousel:opacity-100"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
           >
-            <ChevronLeft className="size-4" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
           <button
+            type="button"
             onClick={scrollNext}
             aria-label="下一張"
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-900/50 text-white transition-all hover:bg-emerald-800/70 active:scale-95 opacity-0 group-hover/carousel:opacity-100"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
           >
-            <ChevronRight className="size-4" />
+            <ChevronRight className="h-4 w-4" />
           </button>
-        </>
+        </div>
       )}
     </div>
   );

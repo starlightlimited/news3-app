@@ -11,6 +11,7 @@ import {
   buildLocaleUrl,
 } from "@/lib/seo-config";
 import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -131,11 +132,12 @@ export default async function LocaleLayout({
 
   return (
     <div
-      className={`${playfair.variable} ${sourceSans.variable} flex min-h-screen bg-stone-50 font-sans text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100`}
+      className={`${playfair.variable} ${sourceSans.variable} flex min-h-screen flex-col bg-stone-50 font-sans text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100`}
     >
       <NextIntlClientProvider messages={messages}>
         <Header />
-        <main className="min-w-0 flex-1 overflow-x-hidden pl-56">{children}</main>
+        <main className="flex-1 min-w-0">{children}</main>
+        <Footer />
       </NextIntlClientProvider>
     </div>
   );
