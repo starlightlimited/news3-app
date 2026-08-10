@@ -81,19 +81,20 @@ function FeaturedArticleCard({
       href={`/article/${article.slug}`}
       className="group relative mb-8 block overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-stone-800 dark:bg-stone-900"
     >
-      <div className="grid gap-0 md:grid-cols-12">
-        <div className="relative aspect-[16/9] w-full overflow-hidden bg-stone-100 md:col-span-7 md:aspect-auto md:h-full dark:bg-stone-800">
+      <div className="grid items-start gap-0 md:grid-cols-12">
+        <div className="relative w-full bg-stone-100 md:col-span-7 dark:bg-stone-800">
           {article.cover?.url ? (
             <Image
               src={article.cover.url}
               alt={article.cover.alt || article.title}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              width={article.cover.width || 1200}
+              height={article.cover.height || 675}
+              className="h-auto w-full"
               sizes="(max-width: 768px) 100vw, 600px"
               priority
             />
           ) : (
-            <div className="flex h-full w-full min-h-[220px] items-center justify-center text-xs text-stone-400">
+            <div className="flex min-h-[220px] w-full items-center justify-center text-xs text-stone-400">
               無封面
             </div>
           )}
@@ -114,7 +115,7 @@ function FeaturedArticleCard({
           </div>
         </div>
 
-        <div className="flex flex-col justify-between p-5 sm:p-6 md:col-span-5">
+        <div className="flex flex-col justify-between p-5 sm:p-6 md:col-span-5 md:self-stretch">
           <div>
             <div className="mb-2 text-xs font-medium text-stone-500 dark:text-stone-400">
               {formatDate(article.published_at)}

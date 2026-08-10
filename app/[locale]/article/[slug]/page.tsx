@@ -178,13 +178,14 @@ export default async function ArticlePage({ params }: Props) {
 
       {/* 封面圖 */}
       {article.cover?.url && (
-        <figure className="group mb-10">
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-stone-200/80 bg-stone-100 shadow-md dark:border-stone-800 dark:bg-stone-900">
+        <figure className="mb-10">
+          <div className="w-full overflow-hidden rounded-xl border border-stone-200/80 bg-stone-100 shadow-md dark:border-stone-800 dark:bg-stone-900">
             <Image
               src={article.cover.url}
               alt={article.cover.alt || article.title}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-[1.01]"
+              width={article.cover.width || 1200}
+              height={article.cover.height || 675}
+              className="h-auto w-full"
               sizes="(max-width: 768px) 100vw, 896px"
               priority
             />
