@@ -12,8 +12,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const seo = await fetchSiteSeo(defaultLocale);
 
   const name = defaultRootSeo.meta_title;
-  const description =
-    seo?.meta_description || defaultRootSeo.meta_description;
+  const description = defaultRootSeo.meta_description;
   const themeColor = seo?.theme_color || defaultRootSeo.theme_color;
   const startUrl = `/${defaultLocale}`;
 

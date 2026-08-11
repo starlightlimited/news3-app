@@ -2,9 +2,8 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, Menu, X, Search } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
-import LocaleSwitcher from "./locale-switcher";
 
 export type Category = {
   id: string;
@@ -161,12 +160,6 @@ export default function Sidebar({ categories }: { categories: Category[] }) {
           })}
         </div>
 
-        {/* 桌面端右側 Search 圖標 */}
-        <div className="hidden items-center gap-3 md:flex text-white/90 hover:text-white cursor-pointer">
-          <Search className="h-4 w-4" />
-          <span className="text-xs font-bold uppercase tracking-wider">即時搜尋</span>
-        </div>
-
         {/* 移動端 Header Toggle */}
         <div className="flex w-full items-center justify-between py-2.5 md:hidden">
           <Link href="/" className="font-serif text-lg font-bold text-white uppercase">
@@ -268,12 +261,6 @@ export default function Sidebar({ categories }: { categories: Category[] }) {
             })}
           </div>
 
-          <div className="mt-4 border-t border-red-600 pt-3">
-            <div className="flex items-center justify-between px-3 text-xs text-white/90">
-              <span>切換語言：</span>
-              <LocaleSwitcher />
-            </div>
-          </div>
         </div>
       )}
     </nav>

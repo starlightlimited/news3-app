@@ -1,19 +1,10 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import Image from "next/image";
 import { ChevronRight, Clock, TrendingUp, Sparkles } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { fetchHomepage, type Article, type CategorySection } from "@/lib/api";
 import HeroCarousel from "@/components/home/hero-carousel";
-
-function formatDate(iso: string | null) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("zh-HK", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    timeZone: "Asia/Hong_Kong",
-  });
-}
+import CoverImage from "@/components/ui/cover-image";
+import { formatArticleDate } from "@/lib/format-date";
 
 // ── 1. Tailnews 清新白底焦點大圖卡片（Editorial Featured Hero） ────────────────────
 
@@ -30,13 +21,18 @@ function FeaturedHero({
         {/* 精美大圖容器 */}
         <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 shadow-2xs">
           {article.cover?.url ? (
-            <Image
+            <CoverImage
               src={article.cover.url}
               alt={article.cover.alt || article.title}
               fill
               className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               sizes="(max-width: 1024px) 100vw, 60vw"
               priority
+              fallback={
+                <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                  無封面圖
+                </div>
+              }
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
@@ -63,16 +59,16 @@ function FeaturedHero({
         <div className="space-y-2 pt-1">
           <div className="flex items-center gap-2 text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>頭條焦點焦點</span>
+            <span>頭條焦點</span>
             {article.published_at && (
               <span className="text-slate-400 font-normal">
-                • {formatDate(article.published_at)}
+                • {formatArticleDate(article.published_at)}
               </span>
             )}
           </div>
 
           <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-black text-slate-900 group-hover:text-red-600 dark:text-white dark:group-hover:text-red-500 transition-colors leading-snug">
-            {article.title}
+            {article.title || "（無標題）"}
           </h2>
 
           {article.excerpt && (
@@ -144,12 +140,17 @@ function CategorySectionBlock({
         >
           <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 sm:col-span-6 border border-slate-100 dark:border-slate-800">
             {topArticle.cover?.url ? (
-              <Image
+              <CoverImage
                 src={topArticle.cover.url}
                 alt={topArticle.cover.alt || topArticle.title}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 640px) 100vw, 400px"
+                fallback={
+                  <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                    {noCover}
+                  </div>
+                }
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
@@ -169,7 +170,7 @@ function CategorySectionBlock({
               </span>
               {topArticle.published_at && (
                 <span className="text-xs text-slate-400">
-                  • {formatDate(topArticle.published_at)}
+                  • {formatArticleDate(topArticle.published_at)}
                 </span>
               )}
             </div>
@@ -196,12 +197,17 @@ function CategorySectionBlock({
             >
               {a.cover?.url ? (
                 <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
-                  <Image
+                  <CoverImage
                     src={a.cover.url}
                     alt={a.cover.alt || a.title}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                     sizes="96px"
+                    fallback={
+                      <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+                        {noCover}
+                      </div>
+                    }
                   />
                 </div>
               ) : (
@@ -218,7 +224,7 @@ function CategorySectionBlock({
                   className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1"
                 >
                   <Clock className="h-3 w-3 text-slate-400" />
-                  {formatDate(a.published_at)}
+                  {formatArticleDate(a.published_at)}
                 </time>
               </div>
             </Link>
@@ -292,7 +298,7 @@ function HotArticlesWidget({
                     dateTime={article.published_at}
                     className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500"
                   >
-                    {formatDate(article.published_at)}
+                    {formatArticleDate(article.published_at)}
                   </time>
                 )}
               </div>
@@ -300,12 +306,13 @@ function HotArticlesWidget({
               {/* 前 2 名附帶縮略圖 */}
               {rank <= 2 && article.cover?.url && (
                 <div className="relative h-14 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
-                  <Image
+                  <CoverImage
                     src={article.cover.url}
                     alt={article.cover.alt || article.title}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                     sizes="64px"
+                    fallback={null}
                   />
                 </div>
               )}
@@ -381,7 +388,7 @@ export default async function HomePage() {
         {/* 2. 主兩欄佈局（Main Content + Sidebar） */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
           {/* 左側主區域 */}
-          <main className="space-y-10 lg:col-span-8">
+          <div className="space-y-10 lg:col-span-8">
             {sections.length > 0 ? (
               sections.map((s) => (
                 <CategorySectionBlock
@@ -397,7 +404,7 @@ export default async function HomePage() {
                 {t("emptyHint")}
               </div>
             )}
-          </main>
+          </div>
 
           {/* 右側 Sidebar 側邊欄 */}
           <aside className="space-y-8 lg:col-span-4">

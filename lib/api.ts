@@ -1,6 +1,6 @@
 // 统一的后台 API 请求工具
 
-const ADMIN_URL = process.env.ADMIN_API_URL;
+const ADMIN_URL = (process.env.ADMIN_API_URL ?? "").replace(/\/$/, "");
 const SITE_DOMAIN = process.env.SITE_DOMAIN;
 
 function adminFetch(
@@ -9,37 +9,28 @@ function adminFetch(
   revalidate = 30
 ) {
   if (!ADMIN_URL || !SITE_DOMAIN) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[API] adminFetch 跳過：缺少 ADMIN_API_URL 或 SITE_DOMAIN", {
-        hasAdmin: !!ADMIN_URL,
-        hasDomain: !!SITE_DOMAIN,
-      });
-    }
+    console.warn("[API] adminFetch 跳過：缺少 ADMIN_API_URL 或 SITE_DOMAIN", {
+      hasAdmin: !!ADMIN_URL,
+      hasDomain: !!SITE_DOMAIN,
+    });
     return Promise.resolve(null);
   }
   const qs = new URLSearchParams({ domain: SITE_DOMAIN, ...params }).toString();
   const url = `${ADMIN_URL}${path}?${qs}`;
   return fetch(url, { next: { revalidate } })
     .then(async (r) => {
-      if (
-        process.env.NODE_ENV === "development" &&
-        !r.ok &&
-        path.includes("site-seo")
-      ) {
-        console.warn("[SEO] 後台 API 回應非 200", { url, status: r.status });
+      if (!r.ok) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[API] 後台回應非 200", { url, status: r.status });
+        }
+        return null;
       }
-      if (!r.ok) return null;
       const contentType = r.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        if (
-          process.env.NODE_ENV === "development" &&
-          path.includes("site-seo")
-        ) {
+        if (process.env.NODE_ENV === "development") {
           console.warn(
-            "[SEO] 後台回傳非 JSON（收到 HTML 等），請確認請求的是後台位址。",
-            "當前 ADMIN_API_URL =",
-            ADMIN_URL,
-            "應為 news-admin 的網址（例如 http://localhost:3000）"
+            "[API] 後台回傳非 JSON，請確認 ADMIN_API_URL 指向後台位址。",
+            ADMIN_URL
           );
         }
         return null;
@@ -47,27 +38,15 @@ function adminFetch(
       try {
         return await r.json();
       } catch {
-        if (
-          process.env.NODE_ENV === "development" &&
-          path.includes("site-seo")
-        ) {
-          console.warn(
-            "[SEO] 後台回傳無法解析為 JSON，請確認 " + url + " 是後台 API。"
-          );
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[API] 後台回傳無法解析為 JSON", url);
         }
         return null;
       }
     })
     .catch((err) => {
-      if (
-        process.env.NODE_ENV === "development" &&
-        path.includes("site-seo")
-      ) {
-        console.warn(
-          "[SEO] 後台 API 請求失敗（網路或後台未啟動）",
-          url,
-          err
-        );
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[API] 後台請求失敗", url, err);
       }
       return null;
     });
@@ -87,7 +66,7 @@ export type Category = {
 
 export async function fetchCategories(locale: string): Promise<Category[]> {
   const json = await adminFetch("/api/categories", { locale }, 60);
-  return json?.categories ?? [];
+  return Array.isArray(json?.categories) ? json.categories : [];
 }
 
 export async function fetchCategoryBySlug(
@@ -140,7 +119,21 @@ export async function fetchArticles(params: {
   if (category_slug) extra.category_slug = category_slug;
 
   const json = await adminFetch("/api/articles", extra, 30);
-  return json ?? { articles: [], total: 0, page: 1, limit, total_pages: 0 };
+  const articles = Array.isArray(json?.articles) ? json.articles : [];
+  const total = Number(json?.total) || 0;
+  const safePage = Number(json?.page) || page;
+  const safeLimit = Number(json?.limit) || limit;
+  const total_pages =
+    Number(json?.total_pages) ||
+    (safeLimit > 0 ? Math.ceil(total / safeLimit) : 0);
+
+  return {
+    articles,
+    total,
+    page: safePage,
+    limit: safeLimit,
+    total_pages,
+  };
 }
 
 export type ArticleDetail = Article & {
@@ -163,7 +156,12 @@ export async function fetchArticleBySlug(
 ): Promise<ArticleDetail | null> {
   const path = `/api/articles/${encodeURIComponent(slug)}`;
   const json = await adminFetch(path, { locale }, 30);
-  return json ?? null;
+  if (!json || typeof json !== "object" || !json.slug) return null;
+  return {
+    ...json,
+    body: typeof json.body === "string" ? json.body : "",
+    title: typeof json.title === "string" ? json.title : "",
+  } as ArticleDetail;
 }
 
 export type HomeCategory = {
@@ -185,7 +183,17 @@ export type HomepageData = {
 
 export async function fetchHomepage(locale: string): Promise<HomepageData> {
   const json = await adminFetch("/api/homepage", { locale }, 30);
-  return json ?? { hero: [], sections: [] };
+  const hero = Array.isArray(json?.hero) ? json.hero : [];
+  const rawSections = Array.isArray(json?.sections) ? json.sections : [];
+  const sections: CategorySection[] = rawSections
+    .filter(
+      (s: CategorySection) => s?.category && typeof s.category === "object"
+    )
+    .map((s: CategorySection) => ({
+      category: s.category,
+      articles: Array.isArray(s.articles) ? s.articles : [],
+    }));
+  return { hero, sections };
 }
 
 export type SiteSeoData = {

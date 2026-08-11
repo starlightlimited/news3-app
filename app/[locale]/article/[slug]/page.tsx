@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { fetchArticleBySlug } from "@/lib/api";
 import { getBaseUrl, buildLocaleUrl, orgName, orgUrl } from "@/lib/seo-config";
+import { formatArticleDate } from "@/lib/format-date";
+import { sanitizeArticleHtml, safeJsonLd } from "@/lib/sanitize-html";
+import CoverImage from "@/components/ui/cover-image";
+import { routing } from "@/i18n/routing";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -18,38 +21,42 @@ export async function generateMetadata({ params }: Props) {
 
   const title = article.meta_title || article.title;
   const description = article.meta_description || article.excerpt;
+  const ogTitle = article.og_title || title;
+  const ogDesc = article.og_description || description;
   const ogImage = article.og_image_url || article.cover?.url;
+  const pathSegment = `article/${slug}`;
+  const canonical = getBaseUrl()
+    ? buildLocaleUrl(locale, pathSegment)
+    : undefined;
+  const languages = getBaseUrl()
+    ? Object.fromEntries(
+        routing.locales.map((loc) => [loc, buildLocaleUrl(loc, pathSegment)])
+      )
+    : undefined;
 
   return {
     title,
     description,
     openGraph: {
-      title: article.og_title || title,
-      description: article.og_description || description,
+      title: ogTitle,
+      description: ogDesc,
       ...(ogImage && { images: [{ url: ogImage }] }),
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title: ogTitle,
+      description: ogDesc,
+      ...(ogImage && { images: [ogImage] }),
     },
     robots: {
       index: article.robots_index,
       follow: article.robots_follow,
     },
     alternates: {
-      ...(article.canonical_url && { canonical: article.canonical_url }),
-      ...(article.alternate_urls &&
-        Object.keys(article.alternate_urls).length > 0 && {
-          languages: article.alternate_urls,
-        }),
+      ...(canonical && { canonical }),
+      ...(languages && Object.keys(languages).length > 0 && { languages }),
     },
   };
-}
-
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "Asia/Taipei",
-  });
 }
 
 export default async function ArticlePage({ params }: Props) {
@@ -66,6 +73,8 @@ export default async function ArticlePage({ params }: Props) {
   const articleUrl = getBaseUrl()
     ? buildLocaleUrl(locale, `article/${article.slug}`)
     : undefined;
+
+  const safeBody = article.body ? sanitizeArticleHtml(article.body) : "";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -91,10 +100,9 @@ export default async function ArticlePage({ params }: Props) {
     <article className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
-      {/* 麵包屑 Breadcrumbs */}
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-medium text-stone-500 dark:text-stone-400">
         <Link
           href="/"
@@ -119,7 +127,6 @@ export default async function ArticlePage({ params }: Props) {
         </span>
       </nav>
 
-      {/* 分類 Badge & 標籤 */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {article.category && (
           <Link
@@ -141,10 +148,9 @@ export default async function ArticlePage({ params }: Props) {
         )}
       </div>
 
-      {/* 文章 Header */}
       <header className="mb-8 border-b border-stone-200 pb-6 dark:border-stone-800">
         <h1 className="font-serif text-3xl font-extrabold leading-tight tracking-tight text-stone-900 sm:text-4xl md:text-5xl dark:text-stone-50">
-          {article.title}
+          {article.title || tCommon("noTitle")}
         </h1>
 
         {article.subtitle && (
@@ -171,16 +177,15 @@ export default async function ArticlePage({ params }: Props) {
                 d="M8 7V3m8 0v4m-9 4h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            {formatDate(article.published_at)}
+            {formatArticleDate(article.published_at, "long")}
           </time>
         </div>
       </header>
 
-      {/* 封面圖 */}
       {article.cover?.url && (
         <figure className="mb-10">
-          <div className="w-full overflow-hidden rounded-xl border border-stone-200/80 bg-stone-100 shadow-md dark:border-stone-800 dark:bg-stone-900">
-            <Image
+          <div className="relative w-full overflow-hidden rounded-xl border border-stone-200/80 bg-stone-100 shadow-md dark:border-stone-800 dark:bg-stone-900">
+            <CoverImage
               src={article.cover.url}
               alt={article.cover.alt || article.title}
               width={article.cover.width || 1200}
@@ -188,6 +193,11 @@ export default async function ArticlePage({ params }: Props) {
               className="h-auto w-full"
               sizes="(max-width: 768px) 100vw, 896px"
               priority
+              fallback={
+                <div className="flex aspect-video w-full items-center justify-center text-sm text-stone-400">
+                  {tCommon("noCover")}
+                </div>
+              }
             />
           </div>
           {article.cover.alt && (
@@ -198,11 +208,10 @@ export default async function ArticlePage({ params }: Props) {
         </figure>
       )}
 
-      {/* 文章正文 (`article-body`) */}
-      {article.body ? (
+      {safeBody ? (
         <div
           className="article-body max-w-none text-stone-800 dark:text-stone-200 [&_p:first-of-type]:text-lg [&_p:first-of-type]:font-medium [&_p:first-of-type]:leading-relaxed [&_p:first-of-type]:text-stone-900 dark:[&_p:first-of-type]:text-stone-100 [&_p]:mt-5 [&_p]:leading-loose [&_h1]:font-serif [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-stone-900 dark:[&_h1]:text-stone-50 [&_h2]:mt-10 [&_h2]:mb-4 [&_h2]:border-b-2 [&_h2]:border-red-600 [&_h2]:pb-2 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-stone-900 dark:[&_h2]:text-stone-50 [&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:font-serif [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-stone-900 dark:[&_h3]:text-stone-100 [&_blockquote]:my-6 [&_blockquote]:rounded-r-lg [&_blockquote]:border-l-4 [&_blockquote]:border-red-600 [&_blockquote]:bg-stone-100 [&_blockquote]:p-5 [&_blockquote]:font-serif [&_blockquote]:italic [&_blockquote]:text-stone-700 dark:[&_blockquote]:bg-stone-900/80 dark:[&_blockquote]:text-stone-300 [&_a]:font-semibold [&_a]:text-red-600 [&_a]:underline [&_a]:underline-offset-4 [&_a]:transition-colors [&_a]:hover:text-red-800 dark:[&_a]:text-red-400 dark:[&_a]:hover:text-red-300 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mt-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_img]:my-6 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:shadow-md"
-          dangerouslySetInnerHTML={{ __html: article.body }}
+          dangerouslySetInnerHTML={{ __html: safeBody }}
         />
       ) : (
         <p className="py-12 text-center text-stone-500 dark:text-stone-400">

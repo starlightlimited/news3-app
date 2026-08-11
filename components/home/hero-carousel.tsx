@@ -2,32 +2,26 @@
 
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Clock, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { Article } from "@/lib/api";
+import { formatArticleDate } from "@/lib/format-date";
+import CoverImage from "@/components/ui/cover-image";
 
 type Props = {
   articles: Article[];
 };
 
-function formatDate(iso: string | null) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("zh-HK", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    timeZone: "Asia/Hong_Kong",
-  });
-}
-
 export default function HeroCarousel({ articles }: Props) {
   const t = useTranslations("Common");
+  const autoplay = useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })
+  );
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, dragFree: false },
-    [Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })]
+    [autoplay.current]
   );
 
   const [current, setCurrent] = useState(0);
@@ -80,13 +74,18 @@ export default function HeroCarousel({ articles }: Props) {
                 {/* 封面圖 */}
                 <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-800">
                   {article.cover?.url ? (
-                    <Image
+                    <CoverImage
                       src={article.cover.url}
                       alt={article.cover.alt || article.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       sizes="(max-width: 1024px) 100vw, 400px"
                       priority={index === 0}
+                      fallback={
+                        <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                          {t("noCover")}
+                        </div>
+                      }
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
@@ -128,7 +127,7 @@ export default function HeroCarousel({ articles }: Props) {
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3 text-red-500" />
                     <time dateTime={article.published_at}>
-                      {formatDate(article.published_at)}
+                      {formatArticleDate(article.published_at)}
                     </time>
                   </div>
                 ) : (

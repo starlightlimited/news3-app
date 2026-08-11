@@ -34,22 +34,16 @@ export async function generateMetadata({
   const seo = await fetchSiteSeo(locale);
 
   const title = defaultRootSeo.meta_title;
-  const description =
-    seo?.meta_description || defaultRootSeo.meta_description;
+  const description = defaultRootSeo.meta_description;
   const ogTitle = defaultRootSeo.og_title;
-  const ogDesc = seo?.og_description || description;
+  const ogDesc = defaultRootSeo.og_description;
   const siteName = defaultRootSeo.og_site_name;
-  const canonical =
-    seo?.canonical_url?.trim() ||
-    (getBaseUrl() ? buildLocaleUrl(locale) : undefined);
-  const languages =
-    seo?.alternate_urls && Object.keys(seo.alternate_urls).length > 0
-      ? seo.alternate_urls
-      : getBaseUrl()
-        ? Object.fromEntries(
-            routing.locales.map((loc) => [loc, buildLocaleUrl(loc)])
-          )
-        : undefined;
+  const canonical = getBaseUrl() ? buildLocaleUrl(locale) : undefined;
+  const languages = getBaseUrl()
+    ? Object.fromEntries(
+        routing.locales.map((loc) => [loc, buildLocaleUrl(loc)])
+      )
+    : undefined;
 
   return {
     metadataBase: getBaseUrl() ? new URL(getBaseUrl()) : undefined,
@@ -124,7 +118,7 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
 
-  if (!routing.locales.includes(locale as "en" | "zh-hk")) {
+  if (!routing.locales.includes(locale as "zh-hk")) {
     notFound();
   }
 

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import CoverImage from "@/components/ui/cover-image";
 import {
   fetchCategoryBySlug,
   fetchArticles,
@@ -9,28 +9,36 @@ import {
 } from "@/lib/api";
 import { getBaseUrl, buildLocaleUrl } from "@/lib/seo-config";
 import { routing } from "@/i18n/routing";
+import { formatArticleDate, parsePage } from "@/lib/format-date";
 
 type Props = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ page?: string }>;
 };
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { page: pageStr } = await searchParams;
+  const page = parsePage(pageStr);
   const locale = await getLocale();
   const category = await fetchCategoryBySlug(slug, locale);
 
   if (!category) return {};
 
-  const title = category.meta_title || category.name;
+  const baseTitle = category.meta_title || category.name;
+  const title = page > 1 ? `${baseTitle}（第 ${page} 頁）` : baseTitle;
   const description = category.meta_description || category.description;
-  const pathSegment = `category/${slug}`;
+  const pathSegment =
+    page > 1 ? `category/${slug}?page=${page}` : `category/${slug}`;
   const canonical = getBaseUrl()
     ? buildLocaleUrl(locale, pathSegment)
     : undefined;
   const languages = getBaseUrl()
     ? Object.fromEntries(
-        routing.locales.map((loc) => [loc, buildLocaleUrl(loc, pathSegment)])
+        routing.locales.map((loc) => [
+          loc,
+          buildLocaleUrl(loc, `category/${slug}`),
+        ])
       )
     : undefined;
 
@@ -43,25 +51,20 @@ export async function generateMetadata({ params }: Props) {
       title,
       description,
     },
+    twitter: {
+      card: "summary_large_image" as const,
+      title,
+      description,
+    },
     alternates: {
       ...(canonical && { canonical }),
       ...(languages && Object.keys(languages).length > 0 && { languages }),
     },
-    robots: { index: true, follow: true },
+    robots: { index: page === 1, follow: true },
   };
 }
 
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    timeZone: "Asia/Taipei",
-  });
-}
-
-// ── 焦點頭條卡片（网格首位突出展示） ──────────────────────────────────────────
+// ── 焦點頭條卡片（網格首位突出展示） ──────────────────────────────────────────
 
 function FeaturedArticleCard({
   article,
@@ -69,12 +72,14 @@ function FeaturedArticleCard({
   breaking,
   pinned,
   noTitle,
+  noCover,
 }: {
   article: Article;
   categoryName: string;
   breaking: string;
   pinned: string;
   noTitle: string;
+  noCover: string;
 }) {
   return (
     <Link
@@ -84,7 +89,7 @@ function FeaturedArticleCard({
       <div className="grid items-start gap-0 md:grid-cols-12">
         <div className="relative w-full bg-stone-100 md:col-span-7 dark:bg-stone-800">
           {article.cover?.url ? (
-            <Image
+            <CoverImage
               src={article.cover.url}
               alt={article.cover.alt || article.title}
               width={article.cover.width || 1200}
@@ -92,10 +97,15 @@ function FeaturedArticleCard({
               className="h-auto w-full"
               sizes="(max-width: 768px) 100vw, 600px"
               priority
+              fallback={
+                <div className="flex min-h-[220px] w-full items-center justify-center text-xs text-stone-400">
+                  {noCover}
+                </div>
+              }
             />
           ) : (
             <div className="flex min-h-[220px] w-full items-center justify-center text-xs text-stone-400">
-              無封面
+              {noCover}
             </div>
           )}
           <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
@@ -118,7 +128,7 @@ function FeaturedArticleCard({
         <div className="flex flex-col justify-between p-5 sm:p-6 md:col-span-5 md:self-stretch">
           <div>
             <div className="mb-2 text-xs font-medium text-stone-500 dark:text-stone-400">
-              {formatDate(article.published_at)}
+              {formatArticleDate(article.published_at)}
             </div>
             <h2 className="font-serif text-xl font-bold leading-snug text-stone-900 transition-colors group-hover:text-red-600 sm:text-2xl dark:text-stone-50 dark:group-hover:text-red-400">
               {article.title || noTitle}
@@ -162,12 +172,17 @@ function StandardArticleCard({
     >
       {article.cover?.url ? (
         <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 sm:h-28 sm:w-44 dark:border-stone-800 dark:bg-stone-800">
-          <Image
+          <CoverImage
             src={article.cover.url}
             alt={article.cover.alt || article.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, 176px"
+            fallback={
+              <div className="flex h-full w-full items-center justify-center text-xs text-stone-400">
+                {noCover}
+              </div>
+            }
           />
         </div>
       ) : (
@@ -195,7 +210,7 @@ function StandardArticleCard({
             dateTime={article.published_at ?? ""}
             className="text-xs text-stone-400 dark:text-stone-500"
           >
-            {formatDate(article.published_at)}
+            {formatArticleDate(article.published_at)}
           </time>
         </div>
 
@@ -334,7 +349,7 @@ export default async function CategoryPage({
 }: Props) {
   const { slug } = await params;
   const { page: pageStr } = await searchParams;
-  const page = Math.max(1, parseInt(pageStr ?? "1", 10));
+  const page = parsePage(pageStr);
   const locale = await getLocale();
 
   const [category, articlesData] = await Promise.all([
@@ -405,6 +420,7 @@ export default async function CategoryPage({
               breaking={tCommon("breaking")}
               pinned={tCommon("pinned")}
               noTitle={tCommon("noTitle")}
+              noCover={tCommon("noCover")}
             />
           )}
 
