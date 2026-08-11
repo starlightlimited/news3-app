@@ -33,12 +33,12 @@ export async function generateMetadata({
   const { locale } = await params;
   const seo = await fetchSiteSeo(locale);
 
-  const title = seo?.meta_title || defaultRootSeo.meta_title;
+  const title = defaultRootSeo.meta_title;
   const description =
     seo?.meta_description || defaultRootSeo.meta_description;
-  const ogTitle = seo?.og_title || title;
+  const ogTitle = defaultRootSeo.og_title;
   const ogDesc = seo?.og_description || description;
-  const siteName = seo?.og_site_name || defaultRootSeo.og_site_name;
+  const siteName = defaultRootSeo.og_site_name;
   const canonical =
     seo?.canonical_url?.trim() ||
     (getBaseUrl() ? buildLocaleUrl(locale) : undefined);

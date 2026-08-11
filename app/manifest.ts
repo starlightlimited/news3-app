@@ -5,13 +5,13 @@ import { fetchSiteSeo } from "@/lib/api";
 
 /**
  * 生成 PWA manifest，供瀏覽器與搜尋引擎使用。
- * 優先使用後台「網站 SEO 設置」，否則用前台預設。
+ * 站點名稱固定用前台 defaultRootSeo；其餘欄位優先後台 SEO。
  */
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const defaultLocale = routing.defaultLocale;
   const seo = await fetchSiteSeo(defaultLocale);
 
-  const name = seo?.meta_title || defaultRootSeo.meta_title;
+  const name = defaultRootSeo.meta_title;
   const description =
     seo?.meta_description || defaultRootSeo.meta_description;
   const themeColor = seo?.theme_color || defaultRootSeo.theme_color;
