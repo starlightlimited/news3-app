@@ -57,11 +57,12 @@ export default async function Header() {
               即時新聞
             </span>
             {breakingArticles.length > 0 ? (
-              <div className="truncate text-slate-300 font-medium hover:text-white transition-colors">
-                <Link href={`/article/${breakingArticles[0].slug}`}>
-                  {breakingArticles[0].title}
-                </Link>
-              </div>
+              <Link
+                href={`/article/${breakingArticles[0].slug}`}
+                className="truncate block text-slate-300 font-medium hover:text-white transition-colors"
+              >
+                {breakingArticles[0].title}
+              </Link>
             ) : (
               <span className="text-slate-400">歡迎來到億民新聞</span>
             )}
@@ -69,7 +70,9 @@ export default async function Header() {
 
           {/* 右側：日期與語言切換 */}
           <div className="flex items-center gap-4 shrink-0 text-slate-400">
-            <time className="hidden sm:inline font-mono">{formattedDate}</time>
+            <time className="hidden sm:inline font-mono" suppressHydrationWarning>
+              {formattedDate}
+            </time>
             <div className="h-3 w-px bg-slate-700 hidden sm:block" />
             <LocaleSwitcher />
           </div>
