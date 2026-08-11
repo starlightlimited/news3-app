@@ -1,8 +1,8 @@
 const defaultSiteName =
-  process.env.NEXT_PUBLIC_SITE_NAME ?? "億民新聞";
+  process.env.NEXT_PUBLIC_SITE_NAME ?? "益民新聞";
 const defaultSiteDescription =
   process.env.NEXT_PUBLIC_SITE_DESCRIPTION ??
-  "億民新聞 - 億萬民聲，權威即時新聞門戶";
+  "益民新聞 - 益民為本，權威即時新聞門戶";
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
 export const defaultRootSeo = {

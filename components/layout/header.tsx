@@ -62,7 +62,7 @@ export default async function Header() {
             <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl bg-slate-900 p-1 border border-slate-200 dark:border-slate-800 shadow-xs transition-transform group-hover:scale-105">
               <Image
                 src="/icon.png"
-                alt="億民新聞 Logo Icon"
+                alt="益民新聞 Logo Icon"
                 fill
                 className="object-cover rounded-lg"
               />
@@ -71,7 +71,7 @@ export default async function Header() {
               <div className="relative h-8 w-44 sm:h-10 sm:w-56">
                 <Image
                   src="/logo.png"
-                  alt="億民新聞 EMIN NEWS"
+                  alt="益民新聞 EMIN NEWS"
                   fill
                   className="object-contain object-left dark:invert"
                   priority

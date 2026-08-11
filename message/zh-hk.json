@@ -1,22 +1,22 @@
 {
   "HomePage": {
-    "title": "億民新聞",
+    "title": "益民新聞",
     "hotArticles": "熱門文章",
     "emptyHint": "暫無文章，請先在後台發佈內容",
     "more": "更多",
     "moreLink": "更多 →"
   },
   "Header": {
-    "logo": "億民新聞",
+    "logo": "益民新聞",
     "home": "首頁",
     "more": "更多",
-    "tagline": "億萬民聲 • 權威即時新聞門戶",
+    "tagline": "益民為本 • 權威即時新聞門戶",
     "breakingNews": "即時新聞",
-    "welcome": "歡迎來到億民新聞",
+    "welcome": "歡迎來到益民新聞",
     "adSlot": "廣告推廣區域"
   },
   "Footer": {
-    "about": "億民新聞提供最新、最快的即時新聞與深度報導，涵蓋科技、財經、生活等多個領域，為您帶來全方位的資訊視野。",
+    "about": "益民新聞提供最新、最快的即時新聞與深度報導，涵蓋科技、財經、生活等多個領域，為您帶來全方位的資訊視野。",
     "quickNav": "快捷導航",
     "hotCategories": "熱門分類",
     "copyright": "版權所有，不得轉載。"
